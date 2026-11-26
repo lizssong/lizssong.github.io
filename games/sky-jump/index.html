@@ -356,14 +356,14 @@
     <h1>구름몬스터<br><span>스카이 점프</span></h1>
     <p class="sub">발판을 밟으면 저절로 폴짝!<br>가고 싶은 구름을 콕 누르면 그쪽으로 움직여요</p>
     <button id="startBtn" class="btn">시작하기</button>
-    <div class="tips"><span>👆 구름 쪽을 탭 · 드래그</span><span>⌨️ ← → / A · D</span></div>
+    <div class="tips"><span>👆 구름 쪽을 탭 · 드래그</span><span>⌨️ ← → / A · D</span><span>☁️ 처음엔 넓은 구름</span></div>
     <div class="cloudlegend">
       <span><i class="c1"></i>일반</span>
       <span><i class="c2"></i>움직임</span>
       <span><i class="c3"></i>부서짐</span>
       <span><i class="c4"></i>스프링</span>
     </div>
-    <div class="bestline">최고 기록 <b id="bestTitle">0</b> m <span style="opacity:.5;font-size:10px;font-weight:700;">v4.1</span></div>
+    <div class="bestline">최고 기록 <b id="bestTitle">0</b> m <span style="opacity:.5;font-size:10px;font-weight:700;">v4.2</span></div>
     <div class="sndhint" id="sndHint" hidden>🔇 소리가 안 들리면 아이폰 측면 <b>무음 스위치</b>를 풀어 주세요</div>
     <button id="rankBtnTitle" class="ghostbtn">🏆 실시간 랭킹 TOP 10</button>
   </div>
@@ -996,6 +996,12 @@
     return clamp(units / (METER * 640), 0, 1);
   }
 
+  /* v4.2 웰컴 구간 — 0~50m는 누구나 오를 수 있게 넓고 안정적인 구름만,
+     50~280m에 걸쳐 서서히 일반 난이도로 이어진다. */
+  function welcomeAt(units) {
+    return clamp(1 - (units / METER - 50) / 230, 0, 1);
+  }
+
   function ensurePlatforms() {
     const top = G.cam + VH + 320;
     let guard = 0;
@@ -1004,23 +1010,33 @@
 
   function spawnNext() {
     const d = difficultyAt(G.spawnY);
-    const easy = G.spawnY < 230;             // 첫 7~8칸은 넓은 일반 구름만 (도입부는 항상 성공)
-    /* 점프 최고 높이(≈150)보다 간격을 항상 낮게 잡아 "밟지 못하는 구간"이 생기지 않게 한다 */
-    const gap = easy ? (60 + rnd(0, 14)) : (56 + rnd(0, 24) + d * 26);
+    const warm = welcomeAt(G.spawnY);         // 1 = 웰컴 구간, 0 = 일반 구간
+    /* 점프 최고 높이(≈150)보다 간격을 항상 낮게 잡아 "밟지 못하는 구간"이 생기지 않게 한다.
+       웰컴 구간은 52~62로 더 좁혀 위쪽에 88~98유닛 여유를 남긴다(점프 미스 방지). */
+    const gapBase = 56 + rnd(0, 24) + d * 26;
+    const gap = lerp(gapBase, 52 + rnd(0, 10), warm);
     const y = G.spawnY + gap;
-    const w = (easy ? 90 : 80 - d * 16) + rnd(0, 12);
+    /* 폭: 웰컴 구간은 기존보다 +36유닛(약 27~30% 넓게), 높이가 오르면 서서히 원래 폭으로 */
+    const w = clamp((80 - d * 16) + rnd(0, 12) + warm * 36, 58, 132);
 
-    // 이전 구름에서 옆으로 너무 멀리 튀지 않게: 65%는 가까이, 나머지는 넓게
+    // 이전 구름에서 옆으로 너무 멀리 튀지 않게: 65%(웰컴 85%)는 가까이, 나머지는 넓게
+    // 첫 20m는 좌우 흔들림을 55→105로 키워 첫 점프부터 실패하지 않게 한다
+    const firstSteps = clamp(1 - G.spawnY / 600, 0, 1);
+    const jit = 105 - 52 * firstSteps;
     const lastPl = G.platforms[G.platforms.length - 1];
     const prevX = lastPl ? lastPl.x : VW / 2;
-    let x = prevX + (Math.random() < 0.65 ? rnd(-105, 105) : rnd(-195, 195));
+    const far = 195 - 30 * warm;
+    let x = prevX + (Math.random() < 0.65 + 0.20 * warm ? rnd(-jit, jit) : rnd(-far, far));
     x = clamp(x, w / 2 + 14, VW - w / 2 - 14);
 
     let type = 'normal';
     const r1 = Math.random();
-    if (!easy) {
-      if (r1 < 0.10 + d * 0.22) type = 'break';
-      else if (r1 < 0.26 + d * 0.40) type = 'move';
+    if (warm < 0.999) {
+      // 움직이는/부서지는 구름은 웰컴 구간 0% → 40~200m에 걸쳐 서서히 등장
+      const pBreak = (0.10 + d * 0.22) * (1 - warm);
+      const pMove = (0.16 + d * 0.40) * (1 - warm);
+      if (r1 < pBreak) type = 'break';
+      else if (r1 < pBreak + pMove) type = 'move';
     }
 
     // 연속 부서지는 발판은 너무 가혹하니 한 번 쉬어가기
@@ -1033,23 +1049,40 @@
       base: x, phase: rnd(0, TAU),
       dead: false, spring: false, springHit: 0, hit: 0, hue: 0
     };
-    if (type === 'normal' && !easy && Math.random() < 0.08) pl.spring = true;
+    // 스프링: 초반일수록 자주(웰컴 16%), 높이 오르면 8% — 쭉쭉 날아오르는 손맛
+    if (type === 'normal' && Math.random() < 0.08 + 0.08 * warm) pl.spring = true;
 
     G.platforms.push(pl);
 
-    // 아이템: 발판 위 허공에 살짝 띄워 놓는다
+    // 아이템: 발판 위 허공(점프 경로)에 살짝 띄워 놓는다 — 그냥 올라가면 먹는다
     if (!pl.spring) {
       const r = Math.random();
-      if (r < 0.30) {
-        // 코인은 한두 개씩 줄줄이 놓아 콤보를 만들기 쉽게
-        const n = Math.random() < 0.35 ? 2 : 1;
+      let acc = 0.32 + 0.10 * warm;                    // 코인 32% → 웰컴 42%
+      const pCoin = acc;
+      acc += 0.050 + 0.010 * warm;                     // 별 5% → 6%
+      const pStar = acc;
+      if (y > 240) acc += 0.045 + 0.015 * warm;        // 무지개 로켓 4.5% → 6% (8m부터)
+      const pRocket = acc;
+      if (y > 240) acc += 0.050 + 0.005 * warm;        // 자석 5% → 5.5%
+      const pMagnet = acc;
+      if (y > 120) acc += 0.055 + 0.005 * warm;        // 방패 5.5% → 6%
+      const pShield = acc;
+
+      if (r < pCoin) {
+        // 코인은 한두 개, 웰컴 구간은 세 개를 부드러운 호로 놓아 FEVER를 쉽게 만든다
+        const arc = warm > 0.5 && Math.random() < 0.35;
+        const n = arc ? 3 : (Math.random() < 0.35 + 0.25 * warm ? 2 : 1);
+        const spread = arc ? 24 : 30;
         const bx = x + rnd(-w / 4, w / 4), by = y + rnd(44, 58);
-        for (let k = 0; k < n; k++) G.items.push(makeItem('coin', bx + k * 30, by + k * 6));
+        for (let k = 0; k < n; k++) {
+          const off = k - (n - 1) / 2;
+          G.items.push(makeItem('coin', bx + off * spread, by + Math.abs(off) * 5));
+        }
       }
-      else if (r < 0.345) G.items.push(makeItem('star', x, y + rnd(52, 70)));
-      else if (r < 0.385 && y > 500) G.items.push(makeItem('rocket', x, y + rnd(56, 76)));
-      else if (r < 0.425 && y > 260) G.items.push(makeItem('magnet', x, y + rnd(48, 68)));
-      else if (r < 0.465 && y > 160) G.items.push(makeItem('shield', x, y + rnd(50, 70)));
+      else if (r < pStar) G.items.push(makeItem('star', x, y + rnd(52, 70)));
+      else if (r < pRocket) G.items.push(makeItem('rocket', x, y + rnd(56, 76)));
+      else if (r < pMagnet) G.items.push(makeItem('magnet', x, y + rnd(48, 68)));
+      else if (r < pShield) G.items.push(makeItem('shield', x, y + rnd(50, 70)));
     }
 
     G.spawnY = y;
