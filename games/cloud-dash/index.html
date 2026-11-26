@@ -1119,8 +1119,8 @@
       G.parts.push({ x: wx, y: wy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60, life: 0, max: rnd(0.35, 0.9), r: rnd(2, 5.5), col: pick(cols), grav: 620 });
     }
   }
-  function popup(wx, wy, text, col, big) {
-    G.pops.push({ x: wx, y: wy, text: text, col: col || '#fff', life: 0, max: big ? 1.1 : 0.85, big: !!big, vy: -46 });
+  function popup(wx, wy, text, col, big, size) {
+    G.pops.push({ x: wx, y: wy, text: text, col: col || '#fff', life: 0, max: big ? 1.1 : 0.85, big: !!big, size: size || 0, vy: -46 });
   }
 
   /* =====================================================================
@@ -1333,7 +1333,7 @@
     P.hurt = 1;
     P.squash = -0.35;
     G.shake = Math.max(G.shake, 0.36); G.shakeMag = Math.max(G.shakeMag, 10);
-    popup(P.x + 4, P.py - 86, '-1 ❤️', '#ff5f86', true);
+    popup(P.x + 4, P.py - 92, '-1 ❤️', '#ff5f86', true, 30);
     burst(P.x, P.py - 26, 20, ['#ff8ecb', '#ff5f86', '#ffffff', '#ffd24a']);
     ring(P.x, P.py - 26);
     Sound.hurt();
@@ -1371,7 +1371,7 @@
     P.rot = 0;
     ring(P.x, groundY - 26);
     puff(P.x, groundY - 4, 14, '#ffffff');
-    popup(P.x + 6, groundY - 108, '복귀!', '#9bf5d2', false);
+    popup(P.x + 6, groundY - 108, '복귀!', '#9bf5d2', false, 17);
     Sound.pad();
   }
 
@@ -1386,7 +1386,7 @@
     G.overShown = false;
     G.shake = 0.42; G.shakeMag = 12;
     burst(P.x, P.py - 24, 26, ['#ffffff', '#bff6ff', '#ffe9a8', '#ffb3c7']);
-    popup(P.x + 4, P.py - 108, 'GAME OVER', '#ff5f86', true);
+    popup(P.x + 4, P.py - 108, 'GAME OVER', '#ff5f86', true, 24);
     Sound.dead();
     Sound.stopBgm();
     const m = Math.round(G.meters);
@@ -1438,14 +1438,14 @@
     if (G.lives < MAX_LIVES) {
       G.lives++;
       heartFlashGain(G.lives - 1);
-      popup(c.x, sy - 14, '+1 ❤️', '#ff5f86', true);
+      popup(c.x, sy - 14, '+1 ❤️', '#ff5f86', true, 26);
       burst(c.x, sy, 18, ['#ff8ecb', '#ff5f86', '#ffd24a', '#ffffff']);
       ring(c.x, sy);
       Sound.heart();
       if (navigator.vibrate) { try { navigator.vibrate([10, 26, 14]); } catch (e) {} }
     } else {
       G.score += 80;
-      popup(c.x, sy - 14, 'FULL ❤️ +80', '#ff8ecb', true);
+      popup(c.x, sy - 14, 'FULL ❤️ +80', '#ff8ecb', true, 20);
       burst(c.x, sy, 12, ['#ff8ecb', '#ffffff', '#ffd24a']);
       Sound.coin(4);
     }
@@ -2412,7 +2412,8 @@
       const a = 1 - q.life / q.max;
       const sx = q.x - cam;
       ctx.globalAlpha = Math.max(0, Math.min(1, a * 1.6));
-      ctx.font = '900 ' + (q.big ? 18 : 13) + 'px ' + FONT;
+      const fsz = q.size || (q.big ? 18 : 13);
+      ctx.font = '900 ' + fsz + 'px ' + FONT;
       ctx.lineWidth = q.big ? 4 : 3;
       ctx.strokeStyle = 'rgba(12,24,44,.55)';
       ctx.strokeText(q.text, sx, q.y);
