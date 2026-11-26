@@ -135,6 +135,13 @@
     background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
     padding:6px 11px; border-radius:999px;
   }
+  .cloudlegend{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:8px; }
+  .cloudlegend span{ display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:800; color:rgba(255,255,255,.72); }
+  .cloudlegend i{ width:16px; height:7px; border-radius:4px; display:block; }
+  .cloudlegend i.c1{ background:linear-gradient(180deg,#9df7cf,#19b57c); }
+  .cloudlegend i.c2{ background:linear-gradient(180deg,#c7d4ff,#6379d8); }
+  .cloudlegend i.c3{ background:linear-gradient(180deg,#f6c89a,#b97a45); }
+  .cloudlegend i.c4{ background:linear-gradient(180deg,#ffe066,#ffb020); }
   .bestline{ margin-top:12px; font-size:12px; font-weight:700; color:rgba(255,255,255,.62); }
   .bestline b{ color:var(--mint-l); font-weight:900; }
 
@@ -170,6 +177,20 @@
   .hint{ font-size:11px; color:rgba(255,255,255,.45); font-weight:600; margin-top:9px; }
   .hidden{ display:none !important; }
 
+  /* ---------- 첫 플레이 안내 ---------- */
+  #toast{
+    position:absolute; left:50%; bottom:calc(84px + env(safe-area-inset-bottom));
+    transform:translateX(-50%); z-index:7; pointer-events:none;
+    padding:10px 16px; border-radius:999px;
+    background:rgba(9,17,33,.82); border:1px solid rgba(255,255,255,.18);
+    color:#fff; font-size:12.5px; font-weight:800; letter-spacing:-.01em;
+    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    box-shadow:0 10px 26px rgba(0,0,0,.4);
+    animation:toastIn .3s ease both;
+    white-space:nowrap;
+  }
+  @keyframes toastIn{ from{ opacity:0; transform:translate(-50%,10px);} to{ opacity:1; transform:translate(-50%,0);} }
+
   /* ---------- 사운드 패널 ---------- */
   #soundPanel{
     position:absolute; top:calc(52px + env(safe-area-inset-top)); right:10px;
@@ -199,7 +220,7 @@
   .switch.on::after{ transform:translateX(17px); }
 
   /* ---------- 효과 배지 ---------- */
-  #fxLine{ display:flex; gap:6px; margin-top:2px; }
+  #fxLine{ display:flex; gap:6px; margin-top:2px; flex-wrap:wrap; max-width:230px; }
   .fx{
     display:inline-flex; align-items:center; gap:4px;
     font-size:11px; font-weight:900; color:#0a2a20;
@@ -210,6 +231,11 @@
   }
   .fx.hide{ display:none; }
   .fx.shieldFx{ background:linear-gradient(180deg,#dbeeff,#9ecbff); color:#12315c; box-shadow:0 2px 8px rgba(90,150,255,.35); }
+  .fx.combo{ background:linear-gradient(180deg,#ffe9a8,#ffc247); color:#4a2a00; box-shadow:0 2px 8px rgba(255,180,40,.4); }
+  .fx.fever{
+    background:linear-gradient(90deg,#ff9cf0,#ffd24a,#9bf5d2,#8fd8ff); color:#2a0a3a;
+    box-shadow:0 2px 12px rgba(255,120,220,.5); animation:pulse .6s ease-in-out infinite;
+  }
 
   /* ---------- 랭킹 ---------- */
   .ghostbtn{
@@ -304,6 +330,8 @@
       <div class="pill"><span class="lbl">높이</span><b id="hval">0</b><span class="unit">m</span></div>
       <div id="scoreLine"><span id="sval">0</span>점<span id="multBadge">×2 점수!</span></div>
       <div id="fxLine">
+        <span id="comboBadge" class="fx combo hide">🔥 <b>0</b> 콤보</span>
+        <span id="fxFever" class="fx fever hide">✨ FEVER</span>
         <span id="fxMagnet" class="fx hide">🧲 <b>0.0</b>s</span>
         <span id="fxShield" class="fx shieldFx hide">🛡️ 방패</span>
       </div>
@@ -314,6 +342,8 @@
     </div>
   </div>
 
+  <div id="toast" class="hidden">구름을 콕! 누른 쪽으로 움직여요</div>
+
   <div id="soundPanel" class="closed">
     <div class="srow"><span class="sl">🎵 배경음</span><button class="switch" id="bgmSwitch" role="switch" aria-checked="true" aria-label="배경음 켜고 끄기"></button></div>
     <div class="srow"><span class="sl">🔔 효과음</span><button class="switch" id="sfxSwitch" role="switch" aria-checked="true" aria-label="효과음 켜고 끄기"></button></div>
@@ -322,9 +352,15 @@
   <div id="title" class="overlay">
     <canvas id="mascot"></canvas>
     <h1>구름몬스터<br><span>스카이 점프</span></h1>
-    <p class="sub">발판을 밟으면 저절로 폴짝!<br>좌우로 움직여 끝없이 올라가요</p>
+    <p class="sub">발판을 밟으면 저절로 폴짝!<br>가고 싶은 구름을 콕 누르면 그쪽으로 움직여요</p>
     <button id="startBtn" class="btn">시작하기</button>
-    <div class="tips"><span>⌨️ ← → / A · D</span><span>👆 화면 좌·우 터치</span></div>
+    <div class="tips"><span>👆 구름 쪽을 탭 · 드래그</span><span>⌨️ ← → / A · D</span></div>
+    <div class="cloudlegend">
+      <span><i class="c1"></i>일반</span>
+      <span><i class="c2"></i>움직임</span>
+      <span><i class="c3"></i>부서짐</span>
+      <span><i class="c4"></i>스프링</span>
+    </div>
     <div class="bestline">최고 기록 <b id="bestTitle">0</b> m</div>
     <button id="rankBtnTitle" class="ghostbtn">🏆 실시간 랭킹 TOP 10</button>
   </div>
@@ -337,6 +373,7 @@
       <div class="rows">
         <div class="row"><span>점수</span><b id="ovScore">0</b></div>
         <div class="row"><span>모은 코인</span><b id="ovCoins">0</b></div>
+        <div class="row"><span>최대 콤보</span><b id="ovCombo">0</b></div>
         <div class="row"><span>최고 기록</span><b id="ovBest">0 m</b></div>
       </div>
       <div class="regrow">
@@ -360,8 +397,10 @@
     </div>
     <div id="rankList"></div>
     <div class="rklegend">
+      <div><b>🚀 로켓</b> 잠깐 동안 무적 초고속 상승</div>
       <div><b>🧲 자석</b> 6초 동안 코인·별을 끌어당겨요</div>
       <div><b>🛡️ 구름 방패</b> 떨어져도 한 번은 살려줘요</div>
+      <div><b>⭐ 별</b> 10초 점수 2배 · <b>🔥 콤보</b> 5개마다 FEVER</div>
     </div>
     <div class="rkfoot">
       <span class="stamp" id="rankStamp">높이 순 · 닉네임당 최고 기록</span>
@@ -386,9 +425,15 @@
   const VW = 400;          // 논리적 세계 폭
   const METER = 30;        // 30 유닛 = 1m
   const GRAV = 2300;
-  const JUMP = 1015;
-  const SPRING_V = 1900;
-  const MOVE_SPEED = 400;
+  /* 점프 높이 = JUMP² / (2·GRAV) ≈ 150유닛.
+     발판 간격(최대 112유닛)보다 조금만 높게 잡아 "한 칸씩 또박또박" 오르도록 맞춘 값입니다.
+     (예전 1015는 한 번에 224유닛을 날아 2~3칸을 건너뛰어 조작이 지멋대로처럼 느껴졌습니다) */
+  const JUMP = 830;
+  const SPRING_V = 1290;   // 스프링 ≈ 360유닛 (약 2.4배)
+  const MOVE_SPEED = 430;  // 좌우 최고 속도
+  const MOVE_ACC = 17;     // 좌우 가속(초당 계수)
+  const MOVE_DEC = 21;     // 손을 뗐을 때 감속
+  const COMBO_WINDOW = 2.6;   // 이 시간 안에 연속으로 먹으면 콤보
   const PR = 19;           // 캐릭터 반지름
 
   const cvs = document.getElementById('game');
@@ -482,6 +527,7 @@
         [69, 72, 77, 72, null, 69, 67, 69]
       ];
       let timer = null, step = 0, next = 0, on = false;
+      let intensity = 0;      // 0(아침) → 1(깊은 우주): 높이 올라갈수록 반짝임이 늘어난다
 
       const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
@@ -554,6 +600,14 @@
         if (s % 2 === 1) hat(t, 0.05);
         if (s === 0 || s === 8) kick(t, 0.46);
         if (s === 4 || s === 12) { hat(t, 0.085); tone(76, t, 0.055, 'triangle', 0.05); }
+        // 높이 올라갈수록 반짝이는 아르페지오가 더해진다
+        if (intensity > 0.18 && s % 4 === 3) {
+          tone(ch.tri[0] + 24, t, 0.07, 'triangle', 0.018 + intensity * 0.024);
+        }
+        if (intensity > 0.55 && s === 14) {
+          tone(ch.tri[2] + 12, t, 0.09, 'sine', 0.03);
+          hat(t, 0.03 + intensity * 0.03);
+        }
       }
 
       function tick() {
@@ -570,6 +624,7 @@
 
       return {
         get playing() { return on; },
+        setIntensity(v) { intensity = clamp(v, 0, 1); },
         start() {
           if (on) return;
           const a = ensure(); if (!a) return;
@@ -589,6 +644,7 @@
     })();
 
     return {
+      get acState() { return ac ? ac.state : 'none'; },
       get muted() { return sfxOff; },
       get sfxOff() { return sfxOff; },
       get bgmOff() { return bgmOff; },
@@ -624,10 +680,23 @@
         beep(300, 0.34, { type: 'sawtooth', to: 1500, vol: 0.14, slide: 0.3 });
         beep(660, 0.3, { type: 'sine', to: 2500, vol: 0.11, slide: 0.26, delay: 0.02 });
       },
-      coin() {
-        beep(1180, 0.07, { type: 'square', vol: 0.11 });
-        beep(1760, 0.13, { type: 'square', vol: 0.09, delay: 0.06 });
+      coin(n) {
+        // 콤보가 쌓일수록 반음씩 올라간다 (먹는 맛)
+        const up = Math.pow(2, Math.min(12, (n || 1) - 1) / 12);
+        beep(1046 * up, 0.07, { type: 'square', vol: 0.11 });
+        beep(1568 * up, 0.13, { type: 'square', vol: 0.09, delay: 0.055 });
       },
+      slide() {
+        beep(520, 0.16, { type: 'sine', to: 760, vol: 0.06, slide: 0.14 });
+      },
+      zone() {
+        [880, 1108, 1318, 1760].forEach((f, i) => beep(f, 0.2, { type: 'triangle', vol: 0.1, delay: i * 0.08 }));
+      },
+      fever() {
+        [784, 988, 1174, 1568, 1976].forEach((f, i) => beep(f, 0.16, { type: 'square', vol: 0.1, delay: i * 0.05 }));
+        beep(392, 0.5, { type: 'triangle', vol: 0.12, slide: 0.4 });
+      },
+      setIntensity(v) { BGM.setIntensity(v); },
       star() {
         [880, 1180, 1560, 2100].forEach((f, i) => beep(f, 0.15, { type: 'triangle', vol: 0.13, delay: i * 0.055 }));
       },
@@ -704,6 +773,21 @@
     };
   }
 
+  /* 고도별 하늘 구간 — 올라갈수록 이름이 바뀌며 성취감을 준다 */
+  const ZONES = [
+    { at: 0,    name: '아침 하늘',   emoji: '🌤️', color: '#bdf3ff', level: 0 },
+    { at: 200,  name: '노을 하늘',   emoji: '🌇', color: '#ffd9a8', level: 0.2 },
+    { at: 380,  name: '저녁 노을',   emoji: '🌆', color: '#ffc0a8', level: 0.4 },
+    { at: 580,  name: '별빛 밤하늘', emoji: '🌙', color: '#cfd8ff', level: 0.62 },
+    { at: 820,  name: '우주',        emoji: '🌌', color: '#d6c8ff', level: 0.82 },
+    { at: 1600, name: '깊은 우주',   emoji: '🪐', color: '#e6dcff', level: 1 }
+  ];
+  function zoneAt(m) {
+    let i = 0;
+    while (i < ZONES.length - 1 && m >= ZONES[i + 1].at) i++;
+    return i;
+  }
+
   /* =====================================================================
      3. 배경 요소
      ===================================================================== */
@@ -745,13 +829,15 @@
     maxY: 0,
     score: 0,
     coins: 0,
+    maxCombo: 0,
     best: 0,
     bestScore: 0,
     nextMile: 100,
     shake: 0,
     shakeMag: 0,
     newBest: false,
-    player: { x: VW / 2, y: PR, vx: 0, vy: 0, face: 1, squash: 0, fly: 0, mult: 0, rot: 0, trail: 0, hurt: 0, magnet: 0, shield: 0 }
+    zone: 0,
+    player: { x: VW / 2, y: PR, vx: 0, vy: 0, face: 1, squash: 0, fly: 0, mult: 0, rot: 0, trail: 0, hurt: 0, magnet: 0, shield: 0, combo: 0, comboT: 0, fever: 0, rainbow: 0 }
   };
 
   try {
@@ -813,11 +899,14 @@
     G.maxY = 0;
     G.score = 0;
     G.coins = 0;
+    G.maxCombo = 0;
     G.nextMile = 100;
     G.shake = 0;
     G.shakeMag = 0;
     G.newBest = false;
-    G.player = { x: VW / 2, y: PR, vx: 0, vy: 0, face: 1, squash: 0, fly: 0, mult: 0, rot: 0, trail: 0, hurt: 0, magnet: 0, shield: 0 };
+    G.zone = 0;
+    steerTarget = null; activePointer = null;
+    G.player = { x: VW / 2, y: PR, vx: 0, vy: 0, face: 1, squash: 0, fly: 0, mult: 0, rot: 0, trail: 0, hurt: 0, magnet: 0, shield: 0, combo: 0, comboT: 0, fever: 0, rainbow: 0 };
 
     G.platforms.push({ x: VW / 2, y: 0, w: 152, type: 'normal', vx: 0, base: VW / 2, phase: 0, dead: false, spring: false, springHit: 0, hit: 0, hue: 0 });
     G.spawnY = 0;
@@ -829,10 +918,12 @@
     Rank.close();
     resetWorld();
     G.state = 'play';
-    G.player.vy = 560;      // 첫 폴짝
+    G.player.vy = JUMP;     // 첫 폴짝 (이제 항상 같은 높이로)
     document.getElementById('title').classList.add('hidden');
     document.getElementById('over').classList.add('hidden');
+    Sound.setIntensity(0);
     Sound.start();
+    showHintOnce();
   }
 
   /* =====================================================================
@@ -850,39 +941,52 @@
 
   function spawnNext() {
     const d = difficultyAt(G.spawnY);
-    const gap = 76 + rnd(0, 30) + d * 30;
+    const easy = G.spawnY < 230;             // 첫 7~8칸은 넓은 일반 구름만 (도입부는 항상 성공)
+    /* 점프 최고 높이(≈150)보다 간격을 항상 낮게 잡아 "밟지 못하는 구간"이 생기지 않게 한다 */
+    const gap = easy ? (60 + rnd(0, 14)) : (56 + rnd(0, 24) + d * 26);
     const y = G.spawnY + gap;
-    const w = 66 - d * 10 + rnd(0, 14);
-    const x = clamp(rnd(w / 2 + 16, VW - w / 2 - 16), w / 2 + 10, VW - w / 2 - 10);
+    const w = (easy ? 90 : 80 - d * 16) + rnd(0, 12);
+
+    // 이전 구름에서 옆으로 너무 멀리 튀지 않게: 65%는 가까이, 나머지는 넓게
+    const lastPl = G.platforms[G.platforms.length - 1];
+    const prevX = lastPl ? lastPl.x : VW / 2;
+    let x = prevX + (Math.random() < 0.65 ? rnd(-105, 105) : rnd(-195, 195));
+    x = clamp(x, w / 2 + 14, VW - w / 2 - 14);
 
     let type = 'normal';
     const r1 = Math.random();
-    if (r1 < 0.16 + d * 0.26) type = 'break';
-    else if (r1 < 0.30 + d * 0.46) type = 'move';
+    if (!easy) {
+      if (r1 < 0.10 + d * 0.22) type = 'break';
+      else if (r1 < 0.26 + d * 0.40) type = 'move';
+    }
 
     // 연속 부서지는 발판은 너무 가혹하니 한 번 쉬어가기
-    const last = G.platforms[G.platforms.length - 1];
-    const prev = G.platforms[G.platforms.length - 2];
-    if (type === 'break' && last && last.type === 'break' && prev && prev.type === 'break') type = 'normal';
+    const prev2 = G.platforms[G.platforms.length - 2];
+    if (type === 'break' && lastPl && lastPl.type === 'break' && prev2 && prev2.type === 'break') type = 'normal';
 
     const pl = {
       x, y, w, type,
-      vx: type === 'move' ? (Math.random() < 0.5 ? -1 : 1) * rnd(38, 78) : 0,
+      vx: type === 'move' ? (Math.random() < 0.5 ? -1 : 1) * rnd(34, 70) : 0,
       base: x, phase: rnd(0, TAU),
       dead: false, spring: false, springHit: 0, hit: 0, hue: 0
     };
-    if (type === 'normal' && Math.random() < 0.07) pl.spring = true;
+    if (type === 'normal' && !easy && Math.random() < 0.08) pl.spring = true;
 
     G.platforms.push(pl);
 
     // 아이템: 발판 위 허공에 살짝 띄워 놓는다
     if (!pl.spring) {
       const r = Math.random();
-      if (r < 0.19) G.items.push(makeItem('coin', x + rnd(-w / 3, w / 3), y + rnd(40, 62)));
-      else if (r < 0.225) G.items.push(makeItem('star', x, y + rnd(52, 70)));
-      else if (r < 0.252 && y > 500) G.items.push(makeItem('rocket', x, y + rnd(56, 76)));
-      else if (r < 0.281 && y > 260) G.items.push(makeItem('magnet', x, y + rnd(48, 68)));
-      else if (r < 0.300 && y > 160) G.items.push(makeItem('shield', x, y + rnd(50, 70)));
+      if (r < 0.30) {
+        // 코인은 한두 개씩 줄줄이 놓아 콤보를 만들기 쉽게
+        const n = Math.random() < 0.35 ? 2 : 1;
+        const bx = x + rnd(-w / 4, w / 4), by = y + rnd(44, 58);
+        for (let k = 0; k < n; k++) G.items.push(makeItem('coin', bx + k * 30, by + k * 6));
+      }
+      else if (r < 0.345) G.items.push(makeItem('star', x, y + rnd(52, 70)));
+      else if (r < 0.385 && y > 500) G.items.push(makeItem('rocket', x, y + rnd(56, 76)));
+      else if (r < 0.425 && y > 260) G.items.push(makeItem('magnet', x, y + rnd(48, 68)));
+      else if (r < 0.465 && y > 160) G.items.push(makeItem('shield', x, y + rnd(50, 70)));
     }
 
     G.spawnY = y;
@@ -925,13 +1029,17 @@
      9. 입력
      ===================================================================== */
   const input = { left: false, right: false };
-  let pointerDir = 0;
+  let steerTarget = null;      // 손가락이 가리키는 세계 x (null = 조작 안 함)
   let activePointer = null;
 
-  function pointerDirFromEvent(e) {
+  /* 화면에서 누른 지점을 세계 좌표로 바꾼다.
+     좌/우 절반으로 방향을 정하던 예전 방식은 손가락이 가운데를 살짝 넘기만 해도
+     전속력으로 반대로 꺾여서 "지멋대로" 움직였습니다.
+     이제는 누른 지점(구름) 쪽으로 부드럽게 다가가고, 손을 떼면 그 자리에서 멈춥니다. */
+  function worldXFromEvent(e) {
     const rect = cvs.getBoundingClientRect();
     const rel = (e.clientX - rect.left) / Math.max(1, rect.width);
-    return rel < 0.5 ? -1 : 1;
+    return clamp(rel, 0, 1) * VW;
   }
 
   window.addEventListener('keydown', (e) => {
@@ -949,6 +1057,13 @@
       else if (G.state === 'over') startGame();
       e.preventDefault();
     }
+    else if (k === 'KeyM') {          // M: 소리 한 번에 켜기/끄기
+      const on = Sound.sfxOff && Sound.bgmOff;
+      Sound.setSfx(on);
+      Sound.setBgm(on);
+      syncSoundUi();
+      e.preventDefault();
+    }
   }, { passive: false });
 
   window.addEventListener('keyup', (e) => {
@@ -959,22 +1074,22 @@
 
   window.addEventListener('pointerdown', (e) => {
     if (G.state !== 'play') return;
-    if (e.target && e.target.closest && e.target.closest('.overlay')) return;
+    if (e.target && e.target.closest && e.target.closest('.overlay, #rankPanel, #soundPanel, #muteBtn')) return;
     activePointer = e.pointerId;
-    pointerDir = pointerDirFromEvent(e);
+    steerTarget = worldXFromEvent(e);
     Sound.unlock();
     if (e.cancelable) e.preventDefault();
   }, { passive: false });
 
   window.addEventListener('pointermove', (e) => {
     if (G.state !== 'play' || activePointer !== e.pointerId) return;
-    pointerDir = pointerDirFromEvent(e);
+    steerTarget = worldXFromEvent(e);
   });
 
   function endPointer(e) {
     if (activePointer === e.pointerId) {
       activePointer = null;
-      pointerDir = 0;
+      steerTarget = null;
     }
   }
   window.addEventListener('pointerup', endPointer);
@@ -994,25 +1109,38 @@
   function stepPhysics(h) {
     const p = G.player;
 
-    // 좌우 이동
-    let dir = 0;
-    if (input.left) dir -= 1;
-    if (input.right) dir += 1;
-    if (!dir) dir = pointerDir;
-    if (dir) p.face = dir;
-
-    const speed = MOVE_SPEED * (p.fly > 0 ? 1.25 : 1);
-    const accel = p.fly > 0 ? 12 : 15;
-    p.vx += (dir * speed - p.vx) * Math.min(1, accel * h);
+    // 좌우 이동: 키보드 → 화면 터치(목표 지점) 순서로 하나만 적용
+    const speed = MOVE_SPEED * (p.fly > 0 ? 1.22 : 1);
+    let targetVx = 0;
+    let keyed = 0;
+    if (input.left) keyed -= 1;
+    if (input.right) keyed += 1;
+    if (keyed) {
+      targetVx = keyed * speed;
+    } else if (steerTarget != null) {
+      const dx = wrappedDx(steerTarget, p.x);
+      const dead = 6;                                  // 손끝이 살짝 떨려도 흔들리지 않게
+      const away = Math.abs(dx) - dead;
+      if (away > 0) {
+        // 가까우면 천천히, 멀면 전속력 → 목표 위에서 부드럽게 멈춥니다
+        const ramp = clamp(away / 64, 0, 1);
+        targetVx = (dx > 0 ? 1 : -1) * speed * (0.22 + 0.78 * ramp);
+      }
+    }
+    const accel = targetVx === 0 ? MOVE_DEC : MOVE_ACC;
+    p.vx += (targetVx - p.vx) * Math.min(1, accel * h);
+    if (targetVx === 0 && Math.abs(p.vx) < 4) p.vx = 0;
+    if (p.vx > 1) p.face = 1;
+    else if (p.vx < -1) p.face = -1;
 
     const prevBottom = p.y - PR;
 
     if (p.fly > 0) {
       p.fly -= h;
-      p.vy = 1300;
+      p.vy = 1150;
       if (p.fly <= 0) {
         p.fly = 0;
-        p.vy = 640;
+        p.vy = JUMP * 0.9;      // 부스터가 끝나면 자연스럽게 다시 점프 흐름으로
         Sound.land();
       }
     } else {
@@ -1033,20 +1161,19 @@
       if (pl.x > VW - pl.w / 2 - 6) { pl.x = VW - pl.w / 2 - 6; pl.vx = -Math.abs(pl.vx); }
     }
 
-    // 착지 판정 (뚫고 지나가지 않도록 이전/현재 바닥 비교)
+    // 착지 판정 — 떨어지는 중에 발바닥이 구름 윗면을 "이번 스텝에" 통과했고,
+    // 발이 구름 폭 안(+발끝 살짝)에 있을 때만 착지.
+    // (예전엔 지나간 x까지 봐서 옆구리로 스치는 구름에도 붙어 버렸습니다)
     if (p.fly <= 0 && p.vy < 0) {
       const newBottom = p.y - PR;
-      const prevX = p.x - p.vx * h;
       for (const pl of G.platforms) {
         if (pl.dead) continue;
         if (prevBottom < pl.y || newBottom > pl.y) continue;
-        const dxNow = wrappedDx(p.x, pl.x);
-        const dxPrev = wrappedDx(prevX, pl.x);
-        const reach = pl.w / 2 + PR * 0.62;
-        if (Math.abs(dxNow) <= reach || Math.abs(dxPrev) <= reach) {
-          land(pl);
-          break;
-        }
+        const dx = wrappedDx(p.x, pl.x);
+        if (Math.abs(dx) > pl.w / 2 + PR * 0.34) continue;
+        p.y = pl.y + PR;         // 구름 위에 정확히 발을 올린다
+        land(pl);
+        break;
       }
     }
 
@@ -1087,7 +1214,7 @@
       pl.dead = true;
       burst(pl.x, pl.y + 4, 12, ['#e7a06a', '#c07a44', '#f7d3ad'], 200);
       Sound.crack();
-      p.vy = JUMP * 0.94;
+      p.vy = JUMP;      // 부서져도 점프 높이는 그대로 (다음 구름까지 항상 닿는다)
       addPopup(pl.x, pl.y + 26, '와삭!', '#ffd9b0', 15);
     } else if (pl.spring) {
       pl.springHit = 1;
@@ -1101,20 +1228,42 @@
       p.vy = JUMP;
       burst(pl.x, pl.y, 5, ['#dffaf0', '#ffffff'], 120);
       Sound.jump(G.maxY / METER);
+      if (pl.type === 'move') Sound.slide();       // 움직이는 구름은 살랑 소리
     }
   }
 
   function collect(it) {
     const p = G.player;
     it.taken = true;
-    const mult = p.mult > 0 ? 2 : 1;
+    const mult = (p.mult > 0 ? 2 : 1) * (p.fever > 0 ? 2 : 1);
+
+    // 코인·별을 연달아 먹으면 콤보가 쌓이고, 5개마다 FEVER!
+    if (it.type === 'coin' || it.type === 'star') {
+      p.combo = (p.comboT > 0 ? p.combo : 0) + 1;
+      p.comboT = COMBO_WINDOW;
+      if (p.combo > G.maxCombo) G.maxCombo = p.combo;
+      if (p.combo % 5 === 0) {
+        p.fever = 3.6;
+        p.rainbow = 1;
+        p.combo = 0;                 // FEVER를 터뜨렸으니 콤보는 새로 쌓는다
+        p.comboT = 0;
+        G.shake = 0.3; G.shakeMag = 6;
+        Sound.fever();
+        addPopup(p.x, p.y + 70, 'FEVER!', '#ff9cf0', 28);
+        burst(it.x, it.y, 28, ['#ff9cf0', '#ffd24a', '#9bf5d2', '#8fd8ff', '#ffffff'], 330);
+      } else if (p.combo >= 3) {
+        addPopup(it.x, it.y + 42, '콤보 ×' + p.combo, '#ffd9a0', 14);
+      }
+    }
 
     if (it.type === 'coin') {
+      const step = clamp(1 + Math.floor((p.combo - 1) / 2), 1, 6);   // 10·10·20·20·30·30…
+      const val = 10 * step * mult;
       G.coins++;
-      G.score += 100 * mult;
+      G.score += val;
       burst(it.x, it.y, 10, ['#ffe177', '#ffb020', '#fff'], 190);
-      Sound.coin();
-      addPopup(it.x, it.y + 18, '+' + (100 * mult), '#ffe177', 16);
+      Sound.coin(p.combo);
+      addPopup(it.x, it.y + 18, '+' + val, '#ffe177', 16);
     } else if (it.type === 'star') {
       p.mult = 10;
       burst(it.x, it.y, 18, ['#ffe177', '#ffb020', '#fff'], 240);
@@ -1122,12 +1271,12 @@
       addPopup(it.x, it.y + 22, '점수 2배!', '#ffd23f', 20);
       if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
     } else if (it.type === 'rocket') {
-      p.fly = 3.2;
-      p.vy = 1300;
+      p.fly = 2.4;
+      p.vy = 1150;
       G.shake = 0.3; G.shakeMag = 6;
-      burst(it.x, it.y, 22, ['#9bf5d2', '#ffffff', '#ffb020'], 300);
+      burst(it.x, it.y, 26, ['#ff9cf0', '#ffd24a', '#9bf5d2', '#8fd8ff', '#ffffff'], 320);
       Sound.rocket();
-      addPopup(it.x, it.y + 22, '로켓 부스터!', '#9bf5d2', 20);
+      addPopup(it.x, it.y + 22, '무지개 로켓!', '#ffb6f2', 20);
       if (navigator.vibrate) { try { navigator.vibrate([12, 30, 18]); } catch (e) {} }
     } else if (it.type === 'magnet') {
       p.magnet = 6.5;
@@ -1152,11 +1301,11 @@
     const h = dt / steps;
     for (let i = 0; i < steps; i++) stepPhysics(h);
 
-    // 점수 · 높이
+    // 점수 · 높이 (별 2배 · FEVER 중에는 점수도 2배)
     if (p.y > G.maxY) {
       const dy = p.y - G.maxY;
       G.maxY = p.y;
-      G.score += (dy / METER) * 10 * (p.mult > 0 ? 2 : 1);
+      G.score += (dy / METER) * 10 * (p.mult > 0 ? 2 : 1) * (p.fever > 0 ? 2 : 1);
     }
     if (p.mult > 0) {
       p.mult -= dt;
@@ -1165,6 +1314,30 @@
     if (p.magnet > 0) {
       p.magnet -= dt;
       if (p.magnet <= 0) p.magnet = 0;
+    }
+    // 콤보 유지 시간 · FEVER
+    if (p.comboT > 0) {
+      p.comboT -= dt;
+      if (p.comboT <= 0) {
+        p.comboT = 0;
+        if (p.combo >= 3) addPopup(p.x, p.y + 44, '콤보 끊김', '#c9d3ec', 13);
+        p.combo = 0;
+      }
+    }
+    if (p.fever > 0) {
+      p.fever -= dt;
+      if (p.fever <= 0) { p.fever = 0; p.combo = 0; p.comboT = 0; addPopup(p.x, p.y + 46, 'FEVER 종료', '#ffc6f2', 14); }
+    }
+    p.rainbow = p.fever > 0 ? 1 : Math.max(0, p.rainbow - dt * 0.8);
+
+    // 하늘 구간이 바뀌면 알려 준다
+    const zoneNow = zoneAt(G.maxY / METER);
+    if (zoneNow !== G.zone) {
+      G.zone = zoneNow;
+      const z = ZONES[zoneNow];
+      addPopup(p.x, p.y + 84, z.emoji + ' ' + z.name, z.color, 20);
+      Sound.zone();
+      Sound.setIntensity(z.level);
     }
 
     // 100m 마일스톤
@@ -1192,20 +1365,24 @@
       if (G.shake <= 0) { G.shake = 0; G.shakeMag = 0; }
     }
 
-    // 로켓 불꽃 트레일
-    if (p.fly > 0) {
-      p.trail -= dt;
-      if (p.trail <= 0) {
-        p.trail = 0.028;
-        G.particles.push({
-          x: p.x + rnd(-6, 6), y: p.y - PR * 1.2,
-          vx: rnd(-40, 40), vy: rnd(-260, -120),
-          life: 0, max: rnd(0.26, 0.5),
-          size: rnd(2, 4.6),
-          color: pick(['#ffd24a', '#ff8a3d', '#fff3c4', '#9bf5d2']),
-          grav: 300, shape: 'dot'
-        });
-      }
+    // 로켓 불꽃 + 무지개 꼬리 / FEVER 무지개 꼬리
+    p.trail -= dt;
+    if (p.trail <= 0 && (p.fly > 0 || p.fever > 0)) {
+      p.trail = p.fly > 0 ? 0.024 : 0.045;
+      const hue = (G.t * 260) % 360;
+      const cols = p.fly > 0
+        ? ['#ffd24a', '#ff8a3d', '#fff3c4', '#9bf5d2', '#8fd8ff']
+        : ['hsl(' + hue + ',100%,70%)', 'hsl(' + ((hue + 90) % 360) + ',100%,72%)', 'hsl(' + ((hue + 190) % 360) + ',100%,74%)', '#ffffff'];
+      G.particles.push({
+        x: p.x + rnd(-6, 6), y: p.y - PR * 1.1,
+        vx: rnd(-45, 45), vy: rnd(-240, -90),
+        life: 0, max: rnd(0.24, 0.48),
+        size: rnd(2, 4.8),
+        color: pick(cols),
+        grav: 320, shape: Math.random() < 0.4 ? 'rect' : 'dot'
+      });
+    } else if (p.trail <= 0) {
+      p.trail = 0.05;
     }
 
     // 파티클 · 팝업
@@ -1280,6 +1457,7 @@
     document.getElementById('ovHeight').textContent = hM;
     document.getElementById('ovScore').textContent = Math.floor(G.score).toLocaleString('ko-KR');
     document.getElementById('ovCoins').textContent = G.coins;
+    document.getElementById('ovCombo').textContent = G.maxCombo > 0 ? '×' + G.maxCombo : '-';
     document.getElementById('ovBest').textContent = G.best + ' m';
     document.getElementById('ovNew').classList.toggle('on', G.newBest);
     updateHud();
@@ -1443,6 +1621,28 @@
     g.arc(x - r * 0.7, y + r * 0.12, r * 0.42, 0, TAU);
     g.arc(x + r * 0.16, y - r * 0.42, r * 0.5, 0, TAU);
     g.fill();
+  }
+
+  // 내 최고 기록 높이를 배경에 옅은 선으로 그어 "저기까지" 목표를 보여 준다
+  function drawBestLine() {
+    if (!(G.best > 0) || G.state !== 'play') return;
+    const g = ctx;
+    const yy = sy(G.best * METER);
+    if (yy < -30 || yy > VH + 30) return;
+    g.save();
+    g.globalAlpha = 0.5;
+    g.strokeStyle = 'rgba(255,255,255,.55)';
+    g.lineWidth = 1.4;
+    g.setLineDash([7, 7]);
+    g.beginPath(); g.moveTo(0, yy); g.lineTo(VW, yy); g.stroke();
+    g.setLineDash([]);
+    g.globalAlpha = 0.85;
+    g.font = '800 11px -apple-system, "Apple SD Gothic Neo", system-ui, sans-serif';
+    g.textBaseline = 'bottom';
+    g.fillStyle = 'rgba(255,255,255,.9)';
+    g.textAlign = 'right';
+    g.fillText('내 최고 ' + G.best + 'm', VW - 10, yy - 3);
+    g.restore();
   }
 
   function drawPlatforms() {
@@ -1960,6 +2160,7 @@
     if (G.shake > 0 && G.shakeMag > 0) {
       g.translate(rnd(-1, 1) * G.shakeMag, rnd(-1, 1) * G.shakeMag);
     }
+    drawBestLine();
     drawPlatforms();
     drawItems();
     drawParticles(false);
@@ -1967,6 +2168,18 @@
     drawParticles(true);
     drawPopups();
     g.restore();
+
+    // 가리키는 지점 표시 (아래쪽 은은한 빛)
+    if (G.state === 'play' && steerTarget != null) {
+      g.save();
+      g.globalAlpha = 0.4;
+      const rg = g.createRadialGradient(steerTarget, VH - 6, 2, steerTarget, VH - 6, 52);
+      rg.addColorStop(0, 'rgba(255,255,255,.85)');
+      rg.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = rg;
+      g.beginPath(); g.arc(steerTarget, VH - 6, 52, 0, TAU); g.fill();
+      g.restore();
+    }
 
     drawVignette();
   }
@@ -1990,9 +2203,13 @@
   const muteBtn = document.getElementById('muteBtn');
   const fxMagnet = document.getElementById('fxMagnet');
   const fxShield = document.getElementById('fxShield');
+  const comboBadge = document.getElementById('comboBadge');
+  const comboBadgeB = comboBadge.querySelector('b');
+  const fxFever = document.getElementById('fxFever');
   const fxMagB = fxMagnet.querySelector('b');
   let shownH = -1, shownS = -1, shownB = -1, shownMult = null;
   let shownMag = false, shownMagTxt = '', shownShield = false;
+  let shownCombo = -1, shownFever = null;
 
   function updateHud() {
     const h = Math.floor(Math.max(0, G.maxY) / METER);
@@ -2015,6 +2232,29 @@
     }
     const shOn = G.player.shield > 0;
     if (shOn !== shownShield) { fxShield.classList.toggle('hide', !shOn); shownShield = shOn; }
+
+    const comboOn = G.player.combo >= 2 && G.player.fever <= 0;
+    if (!comboOn) {
+      if (shownCombo !== 0) { comboBadge.classList.add('hide'); shownCombo = 0; }
+    } else {
+      comboBadge.classList.remove('hide');
+      if (shownCombo !== G.player.combo) { comboBadgeB.textContent = G.player.combo; shownCombo = G.player.combo; }
+    }
+    const fev = G.player.fever > 0;
+    if (fev !== shownFever) { fxFever.classList.toggle('hide', !fev); shownFever = fev; }
+  }
+
+  /* 첫 판에만 보이는 조작 안내 */
+  const toastEl = document.getElementById('toast');
+  let hintTimer = null;
+  function showHintOnce() {
+    let seen = true;
+    try { seen = localStorage.getItem('skyjump.hint') === '1'; } catch (e) {}
+    if (seen || !toastEl) return;
+    toastEl.classList.remove('hidden');
+    try { localStorage.setItem('skyjump.hint', '1'); } catch (e) {}
+    if (hintTimer) clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => toastEl.classList.add('hidden'), 4200);
   }
 
   const soundPanel = document.getElementById('soundPanel');
@@ -2460,6 +2700,23 @@
   Rank.render();
   Rank.load();
   requestAnimationFrame(frame);
+
+  /* 자동 검증용 손잡이 (게임 동작에는 영향 없음) */
+  const errLog = [];
+  window.addEventListener('error', (e) => { errLog.push(String((e && e.message) || e)); });
+  window.addEventListener('unhandledrejection', (e) => { errLog.push('rejection: ' + String(e.reason)); });
+  window.__skyjump = {
+    errors: errLog,
+    sound: Sound,
+    audioState: () => { try { return Sound.unlock() ? 'ok' : 'none'; } catch (e) { return 'err:' + e.message; } },
+    G: G,
+    zones: ZONES,
+    start: startGame,
+    steer: (x) => { steerTarget = x; },
+    release: () => { steerTarget = null; },
+    step: (dt) => { update(dt); },
+    jump: () => ({ JUMP, SPRING_V, GRAV, MOVE_SPEED, apex: JUMP * JUMP / (2 * GRAV) })
+  };
 })();
 </script>
 </body>
