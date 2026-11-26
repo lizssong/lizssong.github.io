@@ -223,6 +223,8 @@
   @keyframes pulseRec{0%,100%{transform:scale(1);}50%{transform:scale(1.09);}}
 
   .tip{margin-top:14px;font-size:11.5px;color:#A98962;line-height:1.6;font-weight:600;}
+  .sndHint{margin-top:6px;color:#B0703F;}  .sndHint[hidden]{display:none;}
+  .ver{opacity:.55;font-size:10px;font-weight:700;}
 
   /* 도감 */
   #ovBook{align-items:center;overflow:auto;padding:16px;}
@@ -362,7 +364,8 @@
         <p class="subtitle">같은 분식끼리 톡 붙으면<br>한 단계 커진 분식으로 <b>합체</b>돼요.<br><span style="color:#C5532F;font-weight:800;">합칠 때마다 점수! 잇달아 합치면 콤보 배수!</span></p>
         <div class="chainRow" id="chainRowStart"></div>
         <button class="primary" id="btnStart">시작하기</button>
-        <div class="tip">최고 점수 <b id="bestStart">0</b>점 · 끌어서 조준하고 손을 떼면 떨어져요</div>
+        <div class="tip">최고 점수 <b id="bestStart">0</b>점 · 끌어서 조준하고 손을 떼면 떨어져요 <span class="ver">v2.1</span></div>
+        <div class="tip sndHint" id="sndHint" hidden>🔇 소리가 안 들리면 아이폰 측면 <b>무음 스위치</b>를 풀어 주세요</div>
         <div class="startRank" id="startRank"></div>
       </div>
     </div>
@@ -814,11 +817,62 @@ var muted = loadMute();
 
 /* ---------- 사운드 (Web Audio) ---------- */
 var actx = null, master = null, comp = null, sfxNoiseBuf = null;
+
+/* ---------- iOS 오디오 대응 ----------
+   아이폰 사파리·인앱 웹뷰에서 소리가 안 나는 세 가지 원인을 모두 처리한다.
+   1) 측면 무음(매너) 스위치 — iOS 16.4+ 는 audioSession='playback' 이면 소리가 난다.
+   2) 첫 제스처에서 오디오 잠금 해제가 풀리지 않음 — 1샘플 무음 버퍼를 실제로 재생하고,
+      AudioContext.state 가 'running' 이 될 때까지 touchstart/touchend/click 마다 재시도.
+   3) 통화·앱 전환·잠금 후 'interrupted'/'suspended' 로 멈춤 — 복귀 시 resume + BGM 재개. */
+function setPlaybackSession(){
+  try{ if(navigator.audioSession) navigator.audioSession.type = 'playback'; }catch(e){}
+}
+/* 구형 iOS·인앱 웹뷰용: 무음 오디오를 계속 반복 재생해 출력을 미디어 오디오 채널로 올린다 */
+var SILENT_WAV = 'data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YSADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
+var keepAliveEl = null;
+function keepAliveStart(){
+  try{
+    if(!keepAliveEl){
+      var a = document.createElement('audio');
+      a.src = SILENT_WAV; a.loop = true; a.preload = 'auto'; a.volume = 0.001;
+      a.setAttribute('playsinline', ''); a.setAttribute('webkit-playsinline', '');
+      a.setAttribute('aria-hidden', 'true');
+      a.style.cssText = 'position:fixed;left:-9999px;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+      document.body.appendChild(a);
+      keepAliveEl = a;
+    }
+    if(keepAliveEl.paused){
+      var p = keepAliveEl.play();
+      if(p && p.catch) p.catch(function(){});
+    }
+  }catch(e){}
+}
+function keepAliveStop(){
+  try{ if(keepAliveEl && !keepAliveEl.paused) keepAliveEl.pause(); }catch(e){}
+}
+/* 1샘플 무음 버퍼 재생 — iOS 오디오 하드웨어를 실제로 깨우는 표준 방식 */
+function primeAudio(ac){
+  if(!ac) return;
+  try{
+    var b = ac.createBuffer(1, 1, 22050);
+    var s = ac.createBufferSource();
+    s.buffer = b; s.connect(ac.destination); s.start(0);
+  }catch(e){}
+}
+function resumeCtx(ac){
+  if(!ac || ac.state === 'running') return;
+  setPlaybackSession();
+  try{
+    var p = ac.resume();
+    if(p && p.catch) p.catch(function(){});
+  }catch(e){}
+}
 function audio(){
   if(!actx){
     var AC = window.AudioContext || window.webkitAudioContext;
     if(!AC) return null;
     try{
+      setPlaybackSession();
       actx = new AC();
       comp = actx.createDynamicsCompressor();
       comp.threshold.value = -16; comp.knee.value = 20; comp.ratio.value = 6;
@@ -826,9 +880,10 @@ function audio(){
       master = actx.createGain();
       master.gain.value = 1;
       master.connect(comp); comp.connect(actx.destination);
+      primeAudio(actx);
     }catch(e){ actx = null; return null; }
   }
-  if(actx.state === 'suspended'){ try{ actx.resume(); }catch(e){} }
+  if(actx.state !== 'running'){ resumeCtx(actx); primeAudio(actx); }
   return muted ? null : actx;
 }
 function tone(opt){
@@ -1013,6 +1068,13 @@ function noiseBurst(ac, t, dur, gain, hpFreq){
 function bgmTick(){
   var ac = actx;
   if(!ac || muted){ return; }
+  // 통화·앱 전환·잠금으로 멈춘 상태에서는 밀린 음을 몰아서 내지 않고 시간을 앞으로 당긴다
+  if(ac.state !== 'running'){
+    if(ac.state === 'suspended' || ac.state === 'interrupted'){ resumeCtx(ac); }
+    bgmNextT = ac.currentTime + 0.08;
+    return;
+  }
+  if(bgmNextT < ac.currentTime){ bgmNextT = ac.currentTime + 0.08; }
   var stepDur = 60 / BPM / 4;
   var guard = 0;
   while(bgmNextT < ac.currentTime + 0.32 && guard < 60){
@@ -1044,6 +1106,7 @@ function bgmStart(){
   if(muted) return;
   var ac = audio(); if(!ac) return;
   musicBus();
+  keepAliveStart();
   if(bgmTimer) return;
   bgmNextT = ac.currentTime + 0.08;
   bgmStep = 0;
@@ -2490,9 +2553,9 @@ $('#btnSfx').addEventListener('click', function(){
   updateSfxBtn();
   if(muted){
     bgmStop();
+    keepAliveStop();
   } else {
-    audio();
-    bgmStart();
+    unlockAudio();
     sfxTap();
   }
 });
@@ -2589,6 +2652,11 @@ function init(){
   buildStaticUI();
   updateChainBar(null);
   $('#bestStart').textContent = best.toLocaleString('ko-KR');
+  // 아이폰에서 무음 스위치 안내 (필요한 경우에만 보이게)
+  try{
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if(isIOS) $('#sndHint').hidden = false;
+  }catch(e){}
   updateHud(true);
   updateItemUI();
   updateStartRank();
@@ -2596,17 +2664,46 @@ function init(){
   requestAnimationFrame(frame);
 }
 
-/* 첫 터치/클릭에 소리 깨우기 (iOS·사파리 정책 대응) */
+/* 첫 터치/클릭에 소리 깨우기 (iOS 사파리·인앱 웹뷰 정책 대응)
+   실제로 'running' 이 될 때까지 여러 제스처에서 계속 시도하고, 그때만 리스너를 정리한다. */
+var audioEvents = ['touchstart', 'touchend', 'pointerdown', 'pointerup', 'click', 'mousedown', 'keydown'];
 function unlockAudio(){
-  audio();
-  if(!muted) bgmStart();
-  window.removeEventListener('pointerdown', unlockAudio);
-  window.removeEventListener('touchstart', unlockAudio);
-  window.removeEventListener('keydown', unlockAudio);
+  setPlaybackSession();
+  if(muted) return;
+  var ac = audio();
+  if(!ac) return;
+  primeAudio(ac);
+  resumeCtx(ac);
+  keepAliveStart();
+  bgmStart();
+  if(actx && actx.state === 'running'){
+    audioEvents.forEach(function(t){ window.removeEventListener(t, unlockAudio, true); });
+  }
 }
-window.addEventListener('pointerdown', unlockAudio, {passive:true});
-window.addEventListener('touchstart', unlockAudio, {passive:true});
-window.addEventListener('keydown', unlockAudio);
+audioEvents.forEach(function(t){
+  window.addEventListener(t, unlockAudio, {passive:true, capture:true});
+});
+
+/* 앱 전환·잠금·통화 후 복귀: 오디오가 'interrupted'/'suspended' 로 멈춰 있으면 다시 깨운다 */
+function rearmAudio(){
+  if(muted) return;
+  setPlaybackSession();
+  // 아직 사용자가 한 번도 터치하지 않아 오디오를 만든 적이 없으면 제스처를 기다린다
+  if(!actx && !bgmTimer && !keepAliveEl) return;
+  var ac = audio();
+  if(ac){
+    primeAudio(ac);
+    resumeCtx(ac);
+    keepAliveStart();
+  }
+  bgmStart();
+}
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden){ bgmStop(); return; }
+  rearmAudio();
+});
+window.addEventListener('pageshow', rearmAudio);
+window.addEventListener('focus', rearmAudio);
 
 /* 검증용 (#debug 로 열었을 때만) */
 if(location.hash === '#debug'){
@@ -2619,6 +2716,10 @@ if(location.hash === '#debug'){
     get maxTier(){ return maxTier; },
     get state(){ return state; },
     audioState: function(){ return actx ? actx.state : 'none'; },
+    audioSession: function(){ try{ return navigator.audioSession ? navigator.audioSession.type : 'none'; }catch(e){ return 'err'; } },
+    keepAlive: function(){ return keepAliveEl ? (keepAliveEl.paused ? 'paused' : 'playing') : 'none'; },
+    muted: function(){ return muted; },
+    unlock: unlockAudio,
     bgmOn: function(){ return !!bgmTimer; },
     over: gameOver,
     showCombo: showComboBanner,

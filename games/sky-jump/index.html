@@ -144,6 +144,8 @@
   .cloudlegend i.c4{ background:linear-gradient(180deg,#ffe066,#ffb020); }
   .bestline{ margin-top:12px; font-size:12px; font-weight:700; color:rgba(255,255,255,.62); }
   .bestline b{ color:var(--mint-l); font-weight:900; }
+  .sndhint{ margin-top:8px; font-size:11px; font-weight:700; color:rgba(255,214,150,.78); }
+  .sndhint[hidden]{ display:none; }
 
   .card{
     width:100%; max-width:310px;
@@ -361,7 +363,8 @@
       <span><i class="c3"></i>부서짐</span>
       <span><i class="c4"></i>스프링</span>
     </div>
-    <div class="bestline">최고 기록 <b id="bestTitle">0</b> m</div>
+    <div class="bestline">최고 기록 <b id="bestTitle">0</b> m <span style="opacity:.5;font-size:10px;font-weight:700;">v4.1</span></div>
+    <div class="sndhint" id="sndHint" hidden>🔇 소리가 안 들리면 아이폰 측면 <b>무음 스위치</b>를 풀어 주세요</div>
     <button id="rankBtnTitle" class="ghostbtn">🏆 실시간 랭킹 TOP 10</button>
   </div>
 
@@ -454,11 +457,61 @@
     try { sfxOff = localStorage.getItem('skyjump.muted') === '1'; } catch (e) {}
     try { bgmOff = localStorage.getItem('skyjump.bgm') === '0'; } catch (e) {}
 
+    /* =================================================================
+       iOS 오디오 대응 (아이폰 사파리·인앱 웹뷰)
+       1) 측면 무음 스위치 — iOS 16.4+ 는 audioSession='playback' 이면 소리가 난다.
+       2) 첫 제스처 잠금 해제 — 1샘플 무음 버퍼를 실제로 재생하고 'running' 될 때까지 재시도.
+       3) 통화·앱 전환 후 'interrupted'/'suspended' — ensure() 마다 resume.
+       ================================================================= */
+    function setPlaybackSession() {
+      try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+    }
+    /* 구형 iOS·인앱 웹뷰용: 무음 오디오를 계속 반복 재생해 출력을 미디어 오디오 채널로 올린다 */
+    const SILENT_WAV = 'data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YSADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
+    let keepAliveEl = null;
+    function keepAliveStart() {
+      try {
+        if (!keepAliveEl) {
+          const a = document.createElement('audio');
+          a.src = SILENT_WAV; a.loop = true; a.preload = 'auto'; a.volume = 0.001;
+          a.setAttribute('playsinline', ''); a.setAttribute('webkit-playsinline', '');
+          a.setAttribute('aria-hidden', 'true');
+          a.style.cssText = 'position:fixed;left:-9999px;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+          document.body.appendChild(a);
+          keepAliveEl = a;
+        }
+        if (keepAliveEl.paused) {
+          const p = keepAliveEl.play();
+          if (p && p.catch) p.catch(function () {});
+        }
+      } catch (e) {}
+    }
+    function keepAliveStop() {
+      try { if (keepAliveEl && !keepAliveEl.paused) keepAliveEl.pause(); } catch (e) {}
+    }
+    /* 1샘플 무음 버퍼 재생 — iOS 오디오 하드웨어를 실제로 깨우는 표준 방식 */
+    function prime(a) {
+      if (!a) return;
+      try {
+        const b = a.createBuffer(1, 1, 22050);
+        const s = a.createBufferSource();
+        s.buffer = b; s.connect(a.destination); s.start(0);
+      } catch (e) {}
+    }
+    function resumeAc() {
+      if (!ac || ac.state === 'running') return;
+      setPlaybackSession();
+      try {
+        const p = ac.resume();
+        if (p && p.catch) p.catch(function () {});
+      } catch (e) {}
+    }
+
     function ensure() {
       if (!ac) {
         const AC = window.AudioContext || window.webkitAudioContext;
         if (!AC) return null;
-        try { ac = new AC(); } catch (e) { return null; }
+        try { setPlaybackSession(); ac = new AC(); } catch (e) { return null; }
         master = ac.createGain();
         master.gain.value = 0.85;
         master.connect(ac.destination);
@@ -468,8 +521,9 @@
         bgmBus = ac.createGain();
         bgmBus.gain.value = 0;
         bgmBus.connect(master);
+        prime(ac);
       }
-      if (ac.state === 'suspended') { try { ac.resume(); } catch (e) {} }
+      if (ac.state !== 'running') { resumeAc(); prime(ac); }
       return ac;
     }
 
@@ -612,6 +666,8 @@
 
       function tick() {
         if (!ac || !on) return;
+        // 통화·앱 전환·잠금으로 멈췄으면 밀린 음을 몰아서 내지 않고 시간을 앞으로 당긴다
+        if (ac.state !== 'running') { resumeAc(); next = ac.currentTime + 0.09; return; }
         if (next < ac.currentTime) next = ac.currentTime + 0.02;
         const horizon = ac.currentTime + 0.14;
         let guard = 0;
@@ -645,13 +701,19 @@
 
     return {
       get acState() { return ac ? ac.state : 'none'; },
+      get audioSession() { try { return navigator.audioSession ? navigator.audioSession.type : 'none'; } catch (e) { return 'err'; } },
+      get keepAlive() { return keepAliveEl ? (keepAliveEl.paused ? 'paused' : 'playing') : 'none'; },
       get muted() { return sfxOff; },
       get sfxOff() { return sfxOff; },
       get bgmOff() { return bgmOff; },
       get bgmPlaying() { return BGM.playing; },
       unlock() {
-        ensure();
+        setPlaybackSession();
+        const a = ensure();
+        if (a) { prime(a); resumeAc(); }
+        if (!sfxOff) keepAliveStart();
         if (!bgmOff) BGM.start();
+        return a;
       },
       startBgm() { if (!bgmOff) BGM.start(); },
       stopBgm() { BGM.stop(); },
@@ -662,7 +724,8 @@
         if (a && sfxBus) {
           try { sfxBus.gain.setTargetAtTime(sfxOff ? 0 : SFX_VOL, a.currentTime, 0.05); } catch (e) { sfxBus.gain.value = sfxOff ? 0 : SFX_VOL; }
         }
-        if (v) beep(760, 0.1, { type: 'sine', vol: 0.16 });
+        if (v) { prime(a); resumeAc(); keepAliveStart(); beep(760, 0.1, { type: 'sine', vol: 0.16 }); }
+        else { keepAliveStop(); }
         return sfxOff;
       },
       setBgm(v) {
@@ -2629,15 +2692,16 @@
   }, true);
 
   // 첫 터치/키 입력에 오디오 잠금 해제 + BGM 시작
-  let gestureDone = false;
-  function firstGesture() {
-    if (gestureDone) return;
-    gestureDone = true;
+  // (iOS 는 한 번의 pointerdown 으로 안 풀리는 경우가 있어 'running' 될 때까지 여러 제스처에서 재시도)
+  const unlockEvents = ['touchstart', 'touchend', 'pointerdown', 'pointerup', 'click', 'mousedown', 'keydown'];
+  function unlockHandler() {
     Sound.unlock();
-    syncSoundUi();
+    if (Sound.acState === 'running') {
+      syncSoundUi();
+      unlockEvents.forEach((t) => window.removeEventListener(t, unlockHandler, true));
+    }
   }
-  window.addEventListener('pointerdown', firstGesture, { passive: true });
-  window.addEventListener('keydown', firstGesture);
+  unlockEvents.forEach((t) => window.addEventListener(t, unlockHandler, { passive: true, capture: true }));
 
   // 랭킹 UI
   submitBtn.addEventListener('click', (e) => { e.stopPropagation(); doSubmit(); });
@@ -2673,9 +2737,10 @@
     } else {
       G.paused = false;
       last = 0;
-      if (!Sound.bgmOff) Sound.startBgm();
+      Sound.unlock();   // 화면 복귀 시 오디오를 다시 깨우고 BGM 재개
     }
   });
+  window.addEventListener('pageshow', () => { if (!document.hidden) Sound.unlock(); });
   window.addEventListener('blur', () => { G.paused = true; });
   window.addEventListener('focus', () => { G.paused = false; last = 0; });
 
@@ -2695,6 +2760,11 @@
   resetWorld();
   updateHud();
   syncSoundUi();
+  // 아이폰에서 무음 스위치 안내
+  try {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOS) document.getElementById('sndHint').hidden = false;
+  } catch (e) {}
   shownB = -1;
   updateHud();
   Rank.render();
@@ -2708,7 +2778,7 @@
   window.__skyjump = {
     errors: errLog,
     sound: Sound,
-    audioState: () => { try { return Sound.unlock() ? 'ok' : 'none'; } catch (e) { return 'err:' + e.message; } },
+    audioState: () => { try { const a = Sound.unlock(); return a ? a.state : 'none'; } catch (e) { return 'err:' + e.message; } },
     G: G,
     zones: ZONES,
     start: startGame,
