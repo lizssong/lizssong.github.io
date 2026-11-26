@@ -1032,7 +1032,7 @@
     let type = 'normal';
     const r1 = Math.random();
     if (warm < 0.999) {
-      // 움직이는/부서지는 구름은 웰컴 구간 0% → 40~200m에 걸쳐 서서히 등장
+      // 움직이는/부서지는 구름은 웰컴 구간 0% → 50~280m에 걸쳐 서서히 등장
       const pBreak = (0.10 + d * 0.22) * (1 - warm);
       const pMove = (0.16 + d * 0.40) * (1 - warm);
       if (r1 < pBreak) type = 'break';
