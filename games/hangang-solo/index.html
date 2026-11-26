@@ -880,7 +880,7 @@ const TUT = [
       <g class="float-hand"><path d="M318 200 V178 a4 4 0 0 1 8 0 V188 l8 2 a4 4 0 0 1 3 5 l-3 7Z" fill="#FFE0C7" stroke="#2A1A22" stroke-width="2.5"/></g>
       <path d="M300 140 Q260 60 220 90" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="4 10" stroke-linecap="round"/></svg>` },
 ];
-const SOLO_TUT = { title:'혼자서는 땅을 눌러 걸어요', text:'가고 싶은 곳을 화면에서 톡 누르면 캐릭터가 그쪽으로 걸어가요. 몬스터 12마리를 모두 잡으면 탑험 완료!',
+const SOLO_TUT = { title:'혼자서는 땅을 눌러 걸어요', text:'가고 싶은 곳을 화면에서 톡 누르면 캐릭터가 그쪽으로 걸어가요. 몬스터 12마리를 모두 잡으면 탐험 완료!',
     art:()=>`<svg viewBox="0 0 400 210"><rect width="400" height="210" fill="#7CC864"/>
       <g stroke="#4E9E45" stroke-width="3" stroke-linecap="round">${[[40,60],[110,170],[250,40],[330,150],[300,90]].map(p=>`<path d="M${p[0]} ${p[1]} l4 -10 l4 10"/>`).join('')}</g>
       <g transform="translate(150 138) scale(1.4)">${bushInline()}</g>
@@ -1016,13 +1016,13 @@ function soloFinish(){
   S.soloBest = best; LS.set(SOLO_BEST_KEY, best); save();
   SFX.win(); vib([60,60,60,60,400]);
   openModal(`<p class="eyebrow" style="text-align:center">ALL CLEAR</p>
-    <h2>탑험 완료!</h2>
+    <h2>탐험 완료!</h2>
     <p class="bigscore">${sc}<span style="font-size:30px">점</span></p>
     <p class="muted" style="text-align:center">몬스터 ${n}마리를 모두 잡았어요${S.caught[BOSS] ? ' · 전설의 몬스터까지!' : ''}</p>
     ${isNew ? '<span class="first-bonus">새 최고 기록!</span>' : `<p class="muted" style="text-align:center">내 최고 기록 ${best}점</p>`}
     <button class="gbtn red big" data-act="soloAgain">한 번 더 하기</button>
     <button class="gbtn small" data-act="toTitle">처음 화면으로</button>`, true);
-  toast('탑험을 끝냈어요! 점수를 확인해 보세요');
+  toast('탐험을 끝냈어요! 점수를 확인해 보세요');
 }
 
 function startFlow(){
