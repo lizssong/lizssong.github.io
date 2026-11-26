@@ -2221,27 +2221,9 @@
     drawLeg(runPhase + Math.PI, 1);
 
     /* ---- 팔 (달리며 흔드는 작은 솜뭉치) ---- */
-    {
-      const armSw = Math.sin(runPhase + Math.PI * 0.5) * (grounded ? 1 : 0.4);
-      const armBob = grounded ? armSw * 2.6 : Math.sin(t * 5.4) * 1.8;
-      const armCol = '#eaf7ff';
-      for (const sd of [-1, 1]) {
-        const ax = sd * (21.4 + (feverOn ? 1.2 : 0));
-        const ay = -23 + (sd > 0 ? -armBob : armBob);
-        g.save();
-        g.translate(ax, ay);
-        g.rotate(sd * (0.35 + Math.abs(armSw) * 0.5));
-        g.fillStyle = armCol;
-        g.beginPath(); g.ellipse(0, 0, 6.4, 4.4, 0, 0, TAU); g.fill();
-        g.strokeStyle = 'rgba(150,198,226,.55)';
-        g.lineWidth = 1;
-        g.stroke();
-        g.restore();
-      }
-    }
-
     /* 몸통 (구름 솜뭉치) — 찌부·탄성은 몸에만 */
     g.save();
+    g.translate(0, -(grounded ? Math.abs(Math.sin(runPhase)) * 1.6 : 0));
     g.scale(1 + sq * 0.17, 1 - sq * 0.17);
     const bodyGrad = g.createLinearGradient(0, -52, 0, -2);
     bodyGrad.addColorStop(0, '#ffffff');
@@ -2253,6 +2235,24 @@
       g.beginPath();
       g.arc(BLOBS[bi][0], BLOBS[bi][1], BLOBS[bi][2], 0, TAU);
       g.fill();
+    }
+    /* 팔 — 몸통 테두리 밖으로 살짝 보이는 솜뭉치 */
+    {
+      const armSw = Math.sin(runPhase + Math.PI * 0.5) * (grounded ? 1 : 0.4);
+      const armBob = grounded ? armSw * 2.8 : Math.sin(t * 5.4) * 1.8;
+      for (const sd of [-1, 1]) {
+        const ax = sd * (26.6 + (feverOn ? 1.4 : 0));
+        const ay = -22 + (sd > 0 ? -armBob : armBob);
+        g.save();
+        g.translate(ax, ay);
+        g.rotate(sd * (0.5 + Math.abs(armSw) * 0.55));
+        g.fillStyle = '#f4fcff';
+        g.beginPath(); g.ellipse(0, 0, 5.4, 3.9, 0, 0, TAU); g.fill();
+        g.strokeStyle = 'rgba(160,205,230,.55)';
+        g.lineWidth = 1;
+        g.stroke();
+        g.restore();
+      }
     }
 
     /* 볼터치 */
