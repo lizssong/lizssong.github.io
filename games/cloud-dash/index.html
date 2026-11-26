@@ -17,7 +17,7 @@
     --rainbow:linear-gradient(90deg,#ff8ecb,#ffd24a,#9bf5d2,#8fd8ff,#c7a6ff);
   }
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body{ height:100%; margin:0; }
+  html,body{ height:100%; width:100%; margin:0; overflow:hidden; }
   body{
     background:#050a16;
     color:#fff;
@@ -504,8 +504,9 @@
   let PX = 108;              // 플레이어 화면 x
 
   function layout() {
-    const vw = Math.max(280, window.innerWidth);
-    const vh = Math.max(320, window.innerHeight);
+    // iframe 안에서는 창 크기가 늦게 바뀔 수 있으므로 body 의 실제 크기를 기준으로 잡는다
+    const vw = Math.max(240, Math.round(document.body.clientWidth || window.innerWidth));
+    const vh = Math.max(280, Math.round(document.body.clientHeight || window.innerHeight));
     const maxAspect = 1.5;
     let w = vw, h = vh;
     if (w / h > maxAspect) w = h * maxAspect;
@@ -999,7 +1000,7 @@
       leftGroundT: -9, squash: 0, face: 1, run: 0, fever: 0, feverEndAt: 0,
       hurt: 0, rot: 0, trail: [], dblT: -9, dead: false, parachute: 0
     };
-    G.nextSpawnX = 470;
+    G.nextSpawnX = 380;
     G.best = loadBest();
   }
 
@@ -1124,9 +1125,13 @@
   }
 
   function choosePattern(m) {
-    if (m < 170) {
+    if (m < 62) {
+      // 출발 직후 — 장애물 없이 별만 깔아 주는 준비 구간
+      return 'runway';
+    }
+    if (m < 175) {
       // 웰컴 구간 — 넉넉한 간격, 고깔 하나 + 별 아치, 가끔 스프링 발판
-      return Math.random() < 0.24 ? 'pad' : 'warmCone';
+      return Math.random() < 0.26 ? 'pad' : 'warmCone';
     }
     const r = Math.random();
     if (m < 420) {
@@ -1160,6 +1165,10 @@
     const baseGap = Math.max(300, spd * (1.55 - Math.min(0.72, m / 1250)));
     const gap = baseGap + rnd(0, baseGap * 0.42);
     switch (kind) {
+      case 'runway': {
+        starLine(x, 5, 44, 46);
+        return x + 300;
+      }
       case 'warmCone': {
         addObstacle('cone', x);
         starArc(x - 16, 4, 74, 84);
@@ -2694,17 +2703,22 @@
   window.addEventListener('focus', () => { G.paused = false; last = 0; });
 
   let resizeTimer = null;
-  window.addEventListener('resize', () => {
+  function scheduleLayout(delay) {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       layout();
       layoutCd();
       if (G.state === 'title' || G.state === 'over') { resetWorld(); updateHud(); }
-    }, 130);
-  });
-  window.addEventListener('orientationchange', () => {
-    setTimeout(() => { layout(); layoutCd(); }, 260);
-  });
+    }, delay == null ? 90 : delay);
+  }
+  window.addEventListener('resize', () => scheduleLayout(90));
+  window.addEventListener('orientationchange', () => scheduleLayout(260));
+  window.addEventListener('load', () => scheduleLayout(30));
+  // iframe 로더가 늦게 크기를 정해도( resize 이벤트가 안 와도 ) 알맞게 다시 잡는다
+  if (window.ResizeObserver) {
+    try { new ResizeObserver(() => scheduleLayout(60)).observe(document.body); } catch (e) {}
+  }
+  [60, 180, 420, 900, 1600].forEach((ms) => setTimeout(() => { layout(); layoutCd(); }, ms));
 
   /* =====================================================================
      17. 부팅
