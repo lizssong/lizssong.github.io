@@ -1551,6 +1551,13 @@ const STORY = {
         spd: 0.42 + Math.random() * 0.22, happyT: 0
       };
     });
+    // 건물이 들어선 자리에 있던 펫은 빈 땅으로 비켜 준다
+    W.pets.forEach(pt => {
+      if (isBuildingTile(Math.round(pt.gx), Math.round(pt.gy))) {
+        const t2 = freeTile(W.pets.filter(q => q !== pt).map(q => ({ gx: q.gx, gy: q.gy })));
+        pt.gx = pt.tx = t2[0]; pt.gy = pt.ty = t2[1]; pt.mode = 'idle'; pt.t = 1.4;
+      }
+    });
     buildProps();
     if (W.w) { layoutCam(); }
   }
@@ -2255,7 +2262,7 @@ const STORY = {
       }
       const items = [];
       W.buildings.forEach(b => {
-        if (Math.round(b.sx) + Math.round(b.sy) === sum) items.push({ y: isoY(b.sy, b.sy) + 2, kind: 1, o: b });
+        if (Math.round(b.sx) + Math.round(b.sy) === sum) items.push({ y: isoY(b.sx, b.sy) + 2, kind: 1, o: b });
       });
       W.props.forEach(p => {
         if (p.gx + p.gy === sum) items.push({ y: isoY(p.gx, p.gy) + 1, kind: 0, o: p });
