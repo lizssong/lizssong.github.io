@@ -1283,7 +1283,13 @@ const Snd = {
   };
 
   function gridN() { return S.built.length >= 7 ? 9 : (S.built.length >= 4 ? 7 : 5); }
-  function slotOf(i, c) { const s = SLOTS[i]; return [c + s[0], c + s[1]]; }
+  function slotOf(i, c) {
+    // 마을이 넓어질수록 건물도 바깥으로 퍼진다
+    const r = Math.max(2, Math.round(c - 1));
+    const base = SLOTS[i];
+    const k = r / 2;
+    return [Math.round(c + base[0] * k), Math.round(c + base[1] * k)];
+  }
 
   function isBuildingTile(gx, gy) {
     return W.buildings.some(b => Math.round(b.gx) === gx && Math.round(b.gy) === gy);
