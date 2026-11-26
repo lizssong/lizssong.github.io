@@ -2287,7 +2287,6 @@ const Snd = {
 
   function startGame() {
     if (!S.chosen) { buildPickGrid(); open(ovPick); return; }
-    $('btnStart').textContent = '이어서 하기';
     buildWorld();
     updHud();
     setTimeout(updHud, 300);
@@ -2305,7 +2304,7 @@ const Snd = {
     setSound(S.sound !== false);
     if (S.chosen && S.pets.length) {
       $('btnContinue').style.display = 'block';
-      $('btnStart').textContent = '이어서 하기';
+      $('btnStart').style.display = 'none';
     }
     buildWorld();
     updHud();
