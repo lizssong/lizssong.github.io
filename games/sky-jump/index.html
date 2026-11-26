@@ -1218,8 +1218,10 @@
       p.comboT = COMBO_WINDOW;
       if (p.combo > G.maxCombo) G.maxCombo = p.combo;
       if (p.combo % 5 === 0) {
-        p.fever = 4.0;
+        p.fever = 3.6;
         p.rainbow = 1;
+        p.combo = 0;                 // FEVER를 터뜨렸으니 콤보는 새로 쌓는다
+        p.comboT = 0;
         G.shake = 0.3; G.shakeMag = 6;
         Sound.fever();
         addPopup(p.x, p.y + 70, 'FEVER!', '#ff9cf0', 28);
@@ -2667,6 +2669,8 @@
   window.addEventListener('unhandledrejection', (e) => { errLog.push('rejection: ' + String(e.reason)); });
   window.__skyjump = {
     errors: errLog,
+    sound: Sound,
+    audioState: () => { try { return Sound.unlock() ? 'ok' : 'none'; } catch (e) { return 'err:' + e.message; } },
     G: G,
     zones: ZONES,
     start: startGame,
