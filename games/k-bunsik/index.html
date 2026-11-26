@@ -1494,12 +1494,6 @@ function overflow(dt){
 var elScore = $('#score'), elBestTop = $('#bestTop');
 var shownScore = 0;
 
-function bumpScore(){
-  elScore.classList.remove('bump');
-  void elScore.offsetWidth;
-  elScore.classList.add('bump');
-}
-
 function startGame(){
   bodies = []; particles = []; popups = [];
   score = 0; shownScore = 0; dispScore = 0; comboCount = 0; lastMergeT = -9;
