@@ -1160,7 +1160,7 @@
 
   /* ❤️ 하트 회복 아이템 — 목숨이 부족할 때 훨씬 자주 나온다 */
   function addHeart(x, h, ph) {
-    G.heartsArr.push({ x: x, h: h == null ? rnd(66, 104) : h, ph: ph == null ? rnd(0, TAU) : ph, got: false });
+    G.heartsArr.push({ x: x, h: h == null ? rnd(56, 96) : h, ph: ph == null ? rnd(0, TAU) : ph, got: false });
   }
   function maybeSpawnHeart(x0, x1) {
     const p = G.lives < MAX_LIVES ? 0.62 : 0.13;
@@ -1169,7 +1169,7 @@
     for (let i = 0; i < G.heartsArr.length; i++) {
       if (!G.heartsArr[i].got && Math.abs(G.heartsArr[i].x - x) < 130) return;
     }
-    addHeart(x, rnd(62, 106));
+    addHeart(x, rnd(56, 96));
   }
 
   function choosePattern(m) {
@@ -1600,7 +1600,7 @@
       const c = G.heartsArr[i];
       if (c.got) continue;
       const dx = c.x - P.x, dy = (groundY - c.h) - (P.py - 24);
-      if (dx * dx + dy * dy < 36 * 36) collectHeart(c);
+      if (dx * dx + dy * dy < 38 * 38) collectHeart(c);
     }
 
     /* 피버 */
