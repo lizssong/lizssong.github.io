@@ -1333,7 +1333,7 @@
     P.hurt = 1;
     P.squash = -0.35;
     G.shake = Math.max(G.shake, 0.36); G.shakeMag = Math.max(G.shakeMag, 10);
-    popup(P.x + 4, P.py - 92, '-1 ❤️', '#ff5f86', true, 30);
+    popup(P.x + 4, Math.min(P.py - 92, groundY - 34), '-1 ❤️', '#ff5f86', true, 30);
     burst(P.x, P.py - 26, 20, ['#ff8ecb', '#ff5f86', '#ffffff', '#ffd24a']);
     ring(P.x, P.py - 26);
     Sound.hurt();

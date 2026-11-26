@@ -1788,7 +1788,7 @@ var Countdown = (function () {
     p.invuln = INVULN_TIME;
     p.hurt = 1;
     G.shake = 0.42; G.shakeMag = 9;
-    addPopup(p.x, p.y + 62, '-1 ❤️', '#ff7ba6', 26);
+    addPopup(p.x, p.y + 118, '-1 ❤️', '#ff7ba6', 26);
     burst(p.x, p.y, 24, ['#ff8ecb', '#ff5f86', '#ffffff', '#ffd24a'], 320);
     Sound.hurt();
     if (navigator.vibrate) { try { navigator.vibrate([18, 44, 24]); } catch (e) {} }
@@ -1816,7 +1816,7 @@ var Countdown = (function () {
     G.shake = 0.34; G.shakeMag = 7;
     burst(p.x, p.y, 22, ['#ffffff', '#ffd6e4', '#ffe6ef', '#9bf5d2'], 300);
     Sound.revive();
-    addPopup(p.x, p.y + 52, '살아났다! ❤️', '#ffc2d6', 20);
+    addPopup(p.x, p.y + 52, '살아났다! ❤️', '#ffc2d6', 19);
   }
 
   function shieldSave() {
