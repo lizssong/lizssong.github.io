@@ -706,7 +706,7 @@ function layout(){
   cv.style.height = H + 'px';
 
   var padX = 12;
-  var maxBoard = Math.min(W - padX*2, 440);
+  var maxBoard = Math.min(W - padX*2, 520);
   var avail = H - safeTop - safeBot;
   var dockH = 46;
   // 전체 높이 = hudH + 8 + B + 16 + (0.30B+18) + 10 + dockH
@@ -738,9 +738,11 @@ function layout(){
 }
 
 function slotRect(i){
-  var m = 14, g = 8;
-  var w = (W - m*2 - g*2)/3;
-  return { x: m + i*(w+g), y: trayY, w: w, h: trayH };
+  var total = Math.min(W, GEO.size + 24);
+  var m = 12, g = 8;
+  var left = (W - total)/2;
+  var w = (total - m*2 - g*2)/3;
+  return { x: left + m + i*(w+g), y: trayY, w: w, h: trayH };
 }
 function pieceCellSize(p){
   var s = slotRect(0).w;
