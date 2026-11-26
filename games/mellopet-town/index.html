@@ -1345,7 +1345,7 @@ const Snd = {
     W.zoom = Math.max(0.5, Math.min(1.5, (W.w - 14) / (W.N * TILE_W)));
     const tw = TILE_W * W.zoom, th = TILE_H * W.zoom;
     W.ox = Math.round(W.w / 2);
-    W.oy = Math.round(W.h * 0.55 - (W.N - 1) * th / 2);
+    W.oy = Math.round(W.h - 26 - Math.max(30, 46 * W.zoom) - (W.N - 1) * th - th / 2);
     W.tw = tw; W.th = th;
   }
   window.addEventListener('resize', () => { resize(); });
@@ -1558,9 +1558,9 @@ const Snd = {
         const cxp = isoX(gx, gy), cyp = isoY(gx, gy);
         const hw = W.tw / 2, hh = W.th / 2;
         // 옆면(두께)
-        const dep = 3 + 7 * W.zoom;
+        const dep = 2 + 4 * W.zoom;
         const eg = ctx.createLinearGradient(0, cyp, 0, cyp + hh + dep);
-        eg.addColorStop(0, '#a8cd86'); eg.addColorStop(1, '#b79567');
+        eg.addColorStop(0, '#a8cd86'); eg.addColorStop(1, '#c9b089');
         ctx.fillStyle = eg;
         ctx.beginPath();
         ctx.moveTo(cxp - hw, cyp); ctx.lineTo(cxp, cyp + hh);
