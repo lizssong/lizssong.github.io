@@ -959,11 +959,16 @@
     // 아이템: 발판 위 허공에 살짝 띄워 놓는다
     if (!pl.spring) {
       const r = Math.random();
-      if (r < 0.19) G.items.push(makeItem('coin', x + rnd(-w / 3, w / 3), y + rnd(40, 62)));
-      else if (r < 0.225) G.items.push(makeItem('star', x, y + rnd(52, 70)));
-      else if (r < 0.252 && y > 500) G.items.push(makeItem('rocket', x, y + rnd(56, 76)));
-      else if (r < 0.281 && y > 260) G.items.push(makeItem('magnet', x, y + rnd(48, 68)));
-      else if (r < 0.300 && y > 160) G.items.push(makeItem('shield', x, y + rnd(50, 70)));
+      if (r < 0.30) {
+        // 코인은 한두 개씩 줄줄이 놓아 콤보를 만들기 쉽게
+        const n = Math.random() < 0.35 ? 2 : 1;
+        const bx = x + rnd(-w / 4, w / 4), by = y + rnd(44, 58);
+        for (let k = 0; k < n; k++) G.items.push(makeItem('coin', bx + k * 30, by + k * 6));
+      }
+      else if (r < 0.345) G.items.push(makeItem('star', x, y + rnd(52, 70)));
+      else if (r < 0.385 && y > 500) G.items.push(makeItem('rocket', x, y + rnd(56, 76)));
+      else if (r < 0.425 && y > 260) G.items.push(makeItem('magnet', x, y + rnd(48, 68)));
+      else if (r < 0.465 && y > 160) G.items.push(makeItem('shield', x, y + rnd(50, 70)));
     }
 
     G.spawnY = y;
@@ -1107,7 +1112,7 @@
 
     if (p.fly > 0) {
       p.fly -= h;
-      p.vy = 1300;
+      p.vy = 1150;
       if (p.fly <= 0) {
         p.fly = 0;
         p.vy = JUMP * 0.9;      // 부스터가 끝나면 자연스럽게 다시 점프 흐름으로
@@ -1184,7 +1189,7 @@
       pl.dead = true;
       burst(pl.x, pl.y + 4, 12, ['#e7a06a', '#c07a44', '#f7d3ad'], 200);
       Sound.crack();
-      p.vy = JUMP * 0.94;
+      p.vy = JUMP;      // 부서져도 점프 높이는 그대로 (다음 구름까지 항상 닿는다)
       addPopup(pl.x, pl.y + 26, '와삭!', '#ffd9b0', 15);
     } else if (pl.spring) {
       pl.springHit = 1;
@@ -1589,6 +1594,28 @@
     g.arc(x - r * 0.7, y + r * 0.12, r * 0.42, 0, TAU);
     g.arc(x + r * 0.16, y - r * 0.42, r * 0.5, 0, TAU);
     g.fill();
+  }
+
+  // 내 최고 기록 높이를 배경에 옅은 선으로 그어 "저기까지" 목표를 보여 준다
+  function drawBestLine() {
+    if (!(G.best > 0) || G.state !== 'play') return;
+    const g = ctx;
+    const yy = sy(G.best * METER);
+    if (yy < -30 || yy > VH + 30) return;
+    g.save();
+    g.globalAlpha = 0.5;
+    g.strokeStyle = 'rgba(255,255,255,.55)';
+    g.lineWidth = 1.4;
+    g.setLineDash([7, 7]);
+    g.beginPath(); g.moveTo(0, yy); g.lineTo(VW, yy); g.stroke();
+    g.setLineDash([]);
+    g.globalAlpha = 0.85;
+    g.font = '800 11px -apple-system, "Apple SD Gothic Neo", system-ui, sans-serif';
+    g.textBaseline = 'bottom';
+    g.fillStyle = 'rgba(255,255,255,.9)';
+    g.textAlign = 'right';
+    g.fillText('내 최고 ' + G.best + 'm', VW - 10, yy - 3);
+    g.restore();
   }
 
   function drawPlatforms() {
@@ -2106,6 +2133,7 @@
     if (G.shake > 0 && G.shakeMag > 0) {
       g.translate(rnd(-1, 1) * G.shakeMag, rnd(-1, 1) * G.shakeMag);
     }
+    drawBestLine();
     drawPlatforms();
     drawItems();
     drawParticles(false);
