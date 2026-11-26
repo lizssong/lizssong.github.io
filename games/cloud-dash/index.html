@@ -1302,7 +1302,11 @@
   function syncHearts(force) {
     if (!heartsEl || (!force && heartsShown === G.lives)) return;
     heartsShown = G.lives;
-    for (let i = 0; i < heartEls.length; i++) heartEls[i].classList.toggle('off', i >= G.lives);
+    for (let i = 0; i < heartEls.length; i++) {
+      const full = i < G.lives;
+      heartEls[i].classList.toggle('off', !full);
+      if (full) heartEls[i].classList.remove('broken');
+    }
   }
   function heartFlashLoss(idx) {
     syncHearts(true);
@@ -1316,7 +1320,7 @@
   function heartFlashGain(idx) {
     syncHearts(true);
     const el = heartEls[idx];
-    if (el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+    if (el) { el.classList.remove('broken', 'pop'); void el.offsetWidth; el.classList.add('pop'); }
   }
 
   /* 목숨 하나 소모 — 남아 있으면 무적 1.6초, 0이면 바로 게임오버 */
