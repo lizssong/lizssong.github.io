@@ -1320,6 +1320,7 @@ const Snd = {
       const gx = Math.floor(Math.random() * W.N), gy = Math.floor(Math.random() * W.N);
       const dx = gx - W.c, dy = gy - W.c;
       if (Math.abs(dx) + Math.abs(dy) < 1) continue;
+      if (Math.abs(dx) >= W.c || Math.abs(dy) >= W.c) continue;   // 바깥 테두리는 피함
       if (isBuildingTile(gx, gy)) continue;
       return [gx, gy];
     }
